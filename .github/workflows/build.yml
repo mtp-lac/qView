@@ -19,16 +19,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner: 'ubuntu-22.04'
-            qtVersion: '5.15.2'
-          - runner: 'macos-14'
-            qtVersion: '6.8.3'
-            qtModules: 'qtimageformats'
-            buildArch: 'Universal'
-          - runner: 'macos-14'
-            qtVersion: '5.15.2'
-            osSuffix: '_legacy'
-            buildArch: 'X64'
           - runner: 'windows-2022'
             qtVersion: '6.8.3'
             qtArch: 'win64_msvc2022_64'
@@ -75,11 +65,6 @@ jobs:
 
       - name: Deploy qView
         env:
-          APPLE_NOTARIZE_REQUESTED: ${{ inputs.appleNotarize }}
-          APPLE_DEVID_APP_CERT_DATA: ${{ secrets.APPLE_DEVID_APP_CERT_DATA }}
-          APPLE_DEVID_APP_CERT_PASS: ${{ secrets.APPLE_DEVID_APP_CERT_PASS }}
-          APPLE_ID_USER: ${{ secrets.APPLE_ID_USER }}
-          APPLE_ID_PASS: ${{ secrets.APPLE_ID_PASS }}
         shell: pwsh
         run: |
           if ("${{ matrix.skipPlugins }}" -ne "true") {
@@ -99,39 +84,3 @@ jobs:
         with:
           name: qView${{ env.nightlyString }}-${{ runner.os }}${{ matrix.osSuffix }}-${{ env.buildNumString }}
           path: bin
-
-  nightly-release:
-    needs: build
-    if: github.ref_name == 'master' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: List downloaded files
-        run: ls -l artifacts/
-
-      - name: Package artifacts for release
-        run: |
-          mkdir release_files
-          cd artifacts
-          for dir in */ a; do
-            zip -r "../release_files/$(basename "$dir").zip" "$dir"
-          done
-          cd ..
-          ls -l release_files/
-
-      - name: Update "Nightly" Release
-        uses: andelf/nightly-release@main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: nightly
-          name: "qView Nightly"
-          prerelease: true
-          body: |
-            Latest automatic build from the master branch. Might be broken.
-
-          files: release_files/*.zip
