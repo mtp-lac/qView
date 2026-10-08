@@ -26,15 +26,8 @@ jobs:
             qtModules: 'qtimageformats'
           - runner: 'windows-2022'
             qtVersion: '6.8.3'
-            qtArch: 'win64_msvc2022_arm64_cross_compiled'
-            osSuffix: '_arm64'
-            qtModules: 'qtimageformats'
-            buildArch: 'Arm64'
           - runner: 'windows-2022'
             qtVersion: '5.15.2'
-            qtArch: 'win32_msvc2019'
-            osSuffix: '_32'
-            buildArch: 'X86'
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Set environment variables
