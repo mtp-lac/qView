@@ -368,7 +368,7 @@ void QVGraphicsView::zoom(qreal scaleFactor, const QPoint &pos)
 {
     // don't zoom too far out, dude
     currentScale *= scaleFactor;
-    if (currentScale >= 500 || currentScale <= 0.01) {
+    if (currentScale >= MAX_CURRENT_SCALE || currentScale <= MIN_CURRENT_SCALE) {
         currentScale *= qPow(scaleFactor, -1);
         return;
     }
@@ -402,6 +402,54 @@ void QVGraphicsView::zoom(qreal scaleFactor, const QPoint &pos)
     if (qvGetSettingBool(ScalingEnabled) && !isOriginalSize) {
         expensiveScaleTimerNew->start();
     }
+
+    emit zoomPercentageChanged();
+}
+
+qreal QVGraphicsView::getFitPercentage() const
+{
+    // absoluteTransform maps original image pixels to view pixels, and currentScale is the
+    // scale that has been applied on top of fit-to-window, so their ratio is the fit scale.
+    if (currentScale <= 0.0)
+        return 0.0;
+
+    return qAbs(absoluteTransform.m11()) * 100.0 / currentScale;
+}
+
+qreal QVGraphicsView::getZoomPercentage() const
+{
+    return qAbs(absoluteTransform.m11()) * 100.0;
+}
+
+qreal QVGraphicsView::getMinZoomPercentage() const
+{
+    return getFitPercentage() * MIN_CURRENT_SCALE;
+}
+
+qreal QVGraphicsView::getMaxZoomPercentage() const
+{
+    return getFitPercentage() * MAX_CURRENT_SCALE;
+}
+
+void QVGraphicsView::setZoomPercentage(qreal percentage, const QPoint &pos)
+{
+    if (!getCurrentFileDetails().isPixmapLoaded)
+        return;
+
+    const qreal currentPercentage = getZoomPercentage();
+    const qreal fitPercentage = getFitPercentage();
+    if (currentPercentage <= 0.0 || fitPercentage <= 0.0)
+        return;
+
+    // Keep the resulting scale strictly inside the limits enforced by zoom()
+    const qreal minPercentage = fitPercentage * MIN_CURRENT_SCALE * 1.000001;
+    const qreal maxPercentage = fitPercentage * MAX_CURRENT_SCALE * 0.999999;
+    const qreal targetPercentage = qBound(minPercentage, percentage, maxPercentage);
+
+    if (targetPercentage <= 0.0 || qAbs(targetPercentage - currentPercentage) < 0.0001)
+        return;
+
+    zoom(targetPercentage / currentPercentage, pos);
 }
 
 void QVGraphicsView::scaleExpensively()
@@ -546,7 +594,12 @@ void QVGraphicsView::originalSize()
     zoomBasisScaleFactor = 1.0;
     absoluteTransform = transform();
 
+    // Absolute size means the fit scale is the original size, so the relative scale restarts
+    currentScale = 1.0;
+
     isOriginalSize = true;
+
+    emit zoomPercentageChanged();
 }
 
 void QVGraphicsView::goToFile(const GoToFileMode &mode, int index)
@@ -725,6 +778,8 @@ void QVGraphicsView::fitInViewMarginless(const QRectF &rect)
     currentScale = 1.0;
     updateFilteringMode();
     zoomBasisScaleFactor = 1.0;
+
+    emit zoomPercentageChanged();
 }
 
 void QVGraphicsView::fitInViewMarginless(const QGraphicsItem *item)

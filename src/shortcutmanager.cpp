@@ -126,6 +126,10 @@ void ShortcutManager::initializeShortcutsList()
                            "originalsize",
                            QStringList(QKeySequence(Qt::Key_O).toString()),
                            {} });
+    shortcutsList.append({ tr("Set Zoom Level"),
+                           "setzoompercentage",
+                           QStringList(QKeySequence(Qt::Key_Z).toString()),
+                           {} });
     shortcutsList.append({ tr("Rotate Right"),
                            "rotateright",
                            QStringList(QKeySequence(Qt::Key_Up).toString()),

@@ -37,6 +37,9 @@ public:
 
     void updateWindowTitle();
 
+    // Formats a zoom percentage for display in the window title, e.g. 100 -> "100%"
+    static QString formatZoomPercentage(qreal percentage);
+
     void updateWindowFilePath();
 
     void setWindowSize();
@@ -82,6 +85,8 @@ public:
     void resetZoom();
 
     void originalSize();
+
+    void setZoomPercentage();
 
     void rotateRight();
 

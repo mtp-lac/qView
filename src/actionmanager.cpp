@@ -248,6 +248,7 @@ QMenu *ActionManager::buildViewMenu(bool addIcon, QWidget *parent)
     addCloneOfAction(viewMenu, "zoomout");
     addCloneOfAction(viewMenu, "resetzoom");
     addCloneOfAction(viewMenu, "originalsize");
+    addCloneOfAction(viewMenu, "setzoompercentage");
     viewMenu->addSeparator();
     addCloneOfAction(viewMenu, "rotateright");
     addCloneOfAction(viewMenu, "rotateleft");
@@ -591,6 +592,8 @@ void ActionManager::actionTriggered(QAction *triggeredAction, MainWindow *releva
         relevantWindow->resetZoom();
     } else if (key == "originalsize") {
         relevantWindow->originalSize();
+    } else if (key == "setzoompercentage") {
+        relevantWindow->setZoomPercentage();
     } else if (key == "rotateright") {
         relevantWindow->rotateRight();
     } else if (key == "rotateleft") {
@@ -721,6 +724,11 @@ void ActionManager::initializeActionLibrary()
     auto *originalSizeAction = new QAction(QIcon::fromTheme("zoom-original"), tr("Ori&ginal Size"));
     originalSizeAction->setData({ "disable" });
     actionLibrary.insert("originalsize", originalSizeAction);
+
+    auto *setZoomPercentageAction =
+            new QAction(QIcon::fromTheme("zoom-select"), tr("Set &Zoom Level..."));
+    setZoomPercentageAction->setData({ "disable" });
+    actionLibrary.insert("setzoompercentage", setZoomPercentageAction);
 
     auto *rotateRightAction =
             new QAction(QIcon::fromTheme("object-rotate-right"), tr("Rotate &Right"));

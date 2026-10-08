@@ -50,6 +50,18 @@ public:
     void setSpeed(const int &desiredSpeed);
     void rotateImage(int rotation);
 
+    // Percentage of the original image size that is currently displayed (100 means actual size).
+    qreal getZoomPercentage() const;
+
+    // Smallest/largest zoom percentage that can currently be reached, as imposed by the
+    // zooming limits below. Can be negative/invalid when no image is loaded.
+    qreal getMinZoomPercentage() const;
+    qreal getMaxZoomPercentage() const;
+
+    // Zooms the image so that it is displayed at the given percentage of its original size.
+    // The requested percentage is clamped to the reachable range.
+    void setZoomPercentage(qreal percentage, const QPoint &pos = QPoint(-1, -1));
+
     const QVImageCore::FileDetails &getCurrentFileDetails() const
     {
         return imageCore.getCurrentFileDetails();
@@ -63,6 +75,9 @@ signals:
     void fileChanged();
 
     void updatedLoadedPixmapItem();
+
+    // Emitted whenever the scale relative to the original image size may have changed
+    void zoomPercentageChanged();
 
 protected:
     void wheelEvent(QWheelEvent *event) override;
@@ -110,10 +125,18 @@ private slots:
 private:
     void updateFilteringMode();
 
+    // Scale relative to the original image size that fit-to-window is currently using.
+    // currentScale is the scale relative to that fit, so this stays constant while zooming.
+    qreal getFitPercentage() const;
+
     QGraphicsPixmapItem *loadedPixmapItem;
 
     constexpr static int MARGIN = -2;
     constexpr static qreal MAX_EXPENSIVE_SCALING_SIZE = 3;
+
+    // Zooming limits, applied to the scale relative to fit-to-window
+    constexpr static qreal MIN_CURRENT_SCALE = 0.01;
+    constexpr static qreal MAX_CURRENT_SCALE = 500;
 
     // Set to too high a value to activate for now...
     constexpr static qreal MAX_FILTERING_SIZE = 5000;

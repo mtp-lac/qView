@@ -61,6 +61,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(graphicsView, &QVGraphicsView::updatedLoadedPixmapItem, this,
             &MainWindow::setWindowSize);
     connect(graphicsView, &QVGraphicsView::cancelSlideshow, this, &MainWindow::cancelSlideshow);
+    connect(graphicsView, &QVGraphicsView::zoomPercentageChanged, this,
+            &MainWindow::updateWindowTitle);
 
     // Initialize escape shortcut
     escShortcut = new QShortcut(Qt::Key_Escape, this);
@@ -486,6 +488,15 @@ void MainWindow::refreshProperties()
                   getCurrentFileDetails().baseImageSize.height(), value4);
 }
 
+QString MainWindow::formatZoomPercentage(qreal percentage)
+{
+    const qreal rounded = qRound(percentage * 10.0) / 10.0;
+    if (qFuzzyCompare(rounded, qreal(qRound(rounded))))
+        return QString::number(qRound(rounded)) + "%";
+
+    return QString::number(rounded, 'f', 1) + "%";
+}
+
 void MainWindow::updateWindowTitle()
 {
     QString newString = "qView";
@@ -514,6 +525,19 @@ void MainWindow::updateWindowTitle()
             newString += " - qView";
             break;
         }
+        }
+
+        // Show the current zoom level in the title bar, keeping the app name at the very end
+        if (getCurrentFileDetails().isPixmapLoaded) {
+            const QString appNameSuffix = " - qView";
+            const bool hasAppNameSuffix = newString.endsWith(appNameSuffix);
+            if (hasAppNameSuffix)
+                newString.chop(appNameSuffix.size());
+
+            newString += " - " + formatZoomPercentage(graphicsView->getZoomPercentage());
+
+            if (hasAppNameSuffix)
+                newString += appNameSuffix;
         }
     }
 
@@ -1002,6 +1026,35 @@ void MainWindow::resetZoom()
 void MainWindow::originalSize()
 {
     graphicsView->originalSize();
+}
+
+void MainWindow::setZoomPercentage()
+{
+    if (!getCurrentFileDetails().isPixmapLoaded)
+        return;
+
+    const qreal currentPercentage = graphicsView->getZoomPercentage();
+    const qreal minPercentage = graphicsView->getMinZoomPercentage();
+    const qreal maxPercentage = graphicsView->getMaxZoomPercentage();
+    if (minPercentage <= 0.0 || maxPercentage <= minPercentage)
+        return;
+
+    auto inputDialog = new QInputDialog(this);
+    inputDialog->setWindowTitle(tr("Set Zoom"));
+    inputDialog->setLabelText(tr("Zoom percentage:"));
+    inputDialog->setInputMode(QInputDialog::DoubleInput);
+    inputDialog->setDoubleDecimals(2);
+    inputDialog->setDoubleRange(minPercentage, maxPercentage);
+    inputDialog->setDoubleValue(currentPercentage);
+    inputDialog->resize(350, inputDialog->height());
+    inputDialog->setWindowFlag(Qt::WindowContextHelpButtonHint, false);
+    connect(inputDialog, &QInputDialog::finished, this, [inputDialog, this](int result) {
+        if (result) {
+            graphicsView->setZoomPercentage(inputDialog->doubleValue());
+        }
+        inputDialog->deleteLater();
+    });
+    inputDialog->open();
 }
 
 void MainWindow::rotateRight()
